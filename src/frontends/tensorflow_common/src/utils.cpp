@@ -431,7 +431,9 @@ Output<Node> compute_broadcast_args(const Output<Node>& shape1, const Output<Nod
     return broadcasted_shape->output(0);
 }
 
-shared_ptr<tuple<shared_ptr<Node>, shared_ptr<Node>, shared_ptr<Node>>> rgb_to_hsv(const shared_ptr<Node>& images) {
+shared_ptr<Node> rgb_to_hsv(const ov::Output<ov::Node>& r,
+    const ov::Output<ov::Node>& g,
+    const ov::Output<ov::Node>& b) {
     // image format conversion based on
     // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/image/adjust_saturation_op.cc
     auto const_zero_f_ = create_same_type_const_scalar<float>(images, 0.0f);
@@ -452,14 +454,6 @@ shared_ptr<tuple<shared_ptr<Node>, shared_ptr<Node>, shared_ptr<Node>>> rgb_to_h
 
     // compute normalization factor (for Hue calculation)
     auto norm = make_shared<v1::Divide>(const_one_f_, make_shared<v1::Multiply>(const_six_f_, range));
-
-    // split the image tensor into R, G, B channels
-    auto const_minus_one_i = make_shared<v0::Constant>(element::i32, Shape{}, -1);
-    auto channels = make_shared<v1::Split>(images, const_minus_one_i, 3);
-
-    auto r = channels->output(0);
-    auto g = channels->output(1);
-    auto b = channels->output(2);
 
     // compute Hue (H)
     // determine which component is the max (V) to compute Hue (H)
@@ -496,7 +490,9 @@ shared_ptr<tuple<shared_ptr<Node>, shared_ptr<Node>, shared_ptr<Node>>> rgb_to_h
                                             make_shared<v1::Add>(hh_zero_range, const_one_f_),
                                             hh_zero_range);
 
-    return make_shared<tuple<shared_ptr<Node>, shared_ptr<Node>, shared_ptr<Node>>>(hh_final, ss, vv);
+    //return make_shared<tuple<shared_ptr<Node>, shared_ptr<Node>, shared_ptr<Node>>>(hh_final, ss, vv);
+    auto hsv = make_shared<v0::Concat>(NodeVector{hh_final, ss, vv}, -1);
+    return hsv;
 }
 
 shared_ptr<Node> hsv_to_rgb(const ov::Output<ov::Node>& h,
