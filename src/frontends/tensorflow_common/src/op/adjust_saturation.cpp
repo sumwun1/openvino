@@ -6,6 +6,7 @@
 #include "openvino/op/clamp.hpp"
 #include "openvino/op/convert_like.hpp"
 #include "openvino/op/multiply.hpp"
+#include "openvino/op/split.hpp"
 #include "utils.hpp"
 
 using namespace std;
@@ -22,9 +23,10 @@ OutputVector translate_adjust_saturation_op(const NodeContext& node) {
     auto images = node.get_input(0);
     auto scale = node.get_input(1);
     auto node_name = node.get_name();
+    auto const_minus_one_i = make_shared<v0::Constant>(element::i32, Shape{}, -1);
+    auto channels = make_shared<v1::Split>(images, const_minus_one_i, 3);
 
-    auto hsv_components = rgb_to_hsv(images.get_node_shared_ptr());
-
+    auto hsv_components = rgb_to_hsv(channels->output(0), channels->output(1), channels->output(2));
     auto hh = get<0>(*hsv_components);
     auto ss = get<1>(*hsv_components);
     auto vv = get<2>(*hsv_components);

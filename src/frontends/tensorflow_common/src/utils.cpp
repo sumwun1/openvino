@@ -436,6 +436,7 @@ shared_ptr<Node> rgb_to_hsv(const ov::Output<ov::Node>& r,
     const ov::Output<ov::Node>& b) {
     // image format conversion based on
     // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/image/adjust_saturation_op.cc
+    auto images = make_shared<v0::Concat>(NodeVector{r, g, b}, -1);
     auto const_zero_f_ = create_same_type_const_scalar<float>(images, 0.0f);
     auto const_one_f_ = create_same_type_const_scalar<float>(images, 1.0f);
     auto const_six_f_ = create_same_type_const_scalar<float>(images, 6.0f);
